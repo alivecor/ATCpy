@@ -1,0 +1,5 @@
+
+
+ALIVE_SIG = 'ALIVE\0\0\0'
+ALIVE_SIG_LEN = 8
+ATC_VERSION = 4  # Spec version 1.6
