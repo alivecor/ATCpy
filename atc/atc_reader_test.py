@@ -1,3 +1,4 @@
+import io
 import unittest
 
 import atc_reader
@@ -33,6 +34,70 @@ class TestATCReader(unittest.TestCase):
         self.assertEqual(samples[8997], -163)
         self.assertEqual(samples[8998], -93)
         self.assertEqual(samples[8999], -179)
+
+    def test_detects_broken_signature(self):
+        with open('atc/test_data/1_lead.atc', 'rb') as f:
+            atc_bytes = bytearray(f.read())
+        atc_bytes[3] = 99  # Change one byte to break file signature
+        with io.BytesIO(bytes(atc_bytes)) as f:
+            atc_file = ATCReader(f)
+        self.assertEqual(atc_file.status(), atc_reader.NO_ATC_SIGNATURE)
+
+    def test_missing_format_block(self):
+        format_block_start = 288
+        format_block_end = 308
+        with open('atc/test_data/1_lead.atc', 'rb') as f:
+            atc_bytes = bytearray(f.read())
+        modified_bytes = atc_bytes[:format_block_start] + atc_bytes[format_block_end:]
+        with io.BytesIO(bytes(modified_bytes)) as f:
+            atc_file = ATCReader(f)
+        self.assertEqual(atc_file.status(), atc_reader.MISSING_DATA)
+
+    def test_verifies_format_block_checksum(self):
+        with open('atc/test_data/1_lead.atc', 'rb') as f:
+            atc_bytes = bytearray(f.read())
+        atc_bytes[296] = 0;  # Format block of this file starts at byte 288
+        with io.BytesIO(bytes(atc_bytes)) as f:
+            atc_file = ATCReader(f)
+        self.assertEqual(atc_file.status(), atc_reader.CORRUPT_DATA)
+
+    def test_verifies_data_block_checksum(self):
+        with open('atc/test_data/1_lead.atc', 'rb') as f:
+            atc_bytes = bytearray(f.read())
+        # ECG data block starts at 308, length 18000.  Modifying any byte between 308 and 18308 breaks data block checksum.
+        atc_bytes[400] = 0
+        with io.BytesIO(bytes(atc_bytes)) as f:
+            atc_file = ATCReader(f)
+        self.assertEqual(atc_file.status(), atc_reader.CORRUPT_DATA)
+
+    def test_verifies_file_broken_checksum(self):
+        atc_file = ATCReader('atc/test_data/broken_checksum.atc')
+        self.assertEqual(atc_file.status(), atc_reader.CORRUPT_DATA)
+
+    def test_loads_6_lead_file(self):
+        atc_file = ATCReader('atc/test_data/6_lead.atc')
+        self.assertEqual(atc_file.status(), atc_reader.READ_SUCCESS)
+        self.assertEqual(atc_file.num_leads(), 6)
+        self.assertFalse(atc_file.mains_filtered())
+        atc_file_ef = ATCReader('atc/test_data/6_lead_ef.atc')
+        self.assertEqual(atc_file_ef.status(), atc_reader.READ_SUCCESS)
+        self.assertEqual(atc_file_ef.num_leads(), 6)
+        self.assertFalse(atc_file_ef.mains_filtered(), 6)
+
+    def test_loads_average_beats(self):
+        atc_file = ATCReader('atc/test_data/6_lead_ab.atc')
+        self.assertEqual(atc_file.status(), atc_reader.READ_SUCCESS)
+        self.assertEqual(atc_file.num_leads(), 6)
+        self.assertFalse(atc_file.mains_filtered())
+        leadI_average_beat = atc_file.get_average_beat(1)
+        self.assertEqual(len(leadI_average_beat), 450)
+        leadII_average_beat = atc_file.get_average_beat(2)
+        self.assertEqual(len(leadII_average_beat), 450)
+        with self.assertRaises(Exception) as ctx:
+            atc_file.get_average_beat(3)
+
+    def test_loads_and_saves_file(self):
+        self.assertTrue(false)
 
 
 if __name__ == '__main__':

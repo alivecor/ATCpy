@@ -46,13 +46,17 @@ def _decode_flags(flag_byte):
 
 
 class ATCReader:
-    def __init__(self, atc_path):
+    def __init__(self, path_or_file):
         self.__status = READ_SUCCESS
-        if not os.path.exists(atc_path):
-            self.__status = NO_FILE
-            return
-        with open(atc_path, 'rb') as f:
-            data = f.read()  # read atc file in binary mode
+        data = None
+        if isinstance(path_or_file, str):
+            if not os.path.exists(path_or_file):
+                self.__status = NO_FILE
+                return
+            with open(path_or_file, 'rb') as f:
+                data = f.read()  # read atc file in binary mode
+        else:
+            data = path_or_file.read()
         self.dict = self.__parse_atc_data(data)
 
     def status(self):
@@ -148,8 +152,10 @@ class ATCReader:
             header, bytes_read, status = _parse_atc_header(data[bytes_read:])
             parsed_data['header'] = header
         except Exception as e:
-            print(str(e))
-            self.__status = NO_ATC_SIGNATURE
+            status = NO_ATC_SIGNATURE
+
+        if status != READ_SUCCESS:
+            self.__status = status
             return None
 
         # Parse block information
@@ -175,6 +181,10 @@ class ATCReader:
                     return None
             else:
                 print('Warning: Unknown ATC block ID %s at byte position %d, ignoring' % (block_id_str, bytes_read - 4))
+        # Fails if no format block present.
+        if 'fmt' not in parsed_data:
+            self.__status = MISSING_DATA
+            return None
         return parsed_data
 
     def __parse_atc_block(self, data, block_id):
