@@ -1,0 +1,7 @@
+"""Beat Annotation Types."""
+
+# Beat types
+BEAT_UNKNOWN = 0
+BEAT_NORMAL = 1
+BEAT_VENTRICULAR_ECTOPIC_BEAT = 2
+BEAT_ATRIAL_ECTOPIC_BEAT = 3

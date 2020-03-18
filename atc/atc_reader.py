@@ -3,7 +3,7 @@ import dateutil.parser
 import os
 import struct
 
-import atc_file_structure
+import atc_file_structure as afs
 
 
 # Reader status codes
@@ -14,16 +14,12 @@ MISSING_DATA = 3      # ATC file doesn't have a format block and a data block.
 CORRUPT_DATA = 4      # Checksum verification failed, ATC file was modified incorrectly.
 
 
-_LEAD_IDS = ['ecg', 'ecg2', 'ecg3', 'ecg4', 'ecg5', 'ecg6']
-_AVG_IDS = ['avg', 'avg2']
-
-
 def _parse_atc_header(data):
     byte_offset = 0
     parsed_block = {}
     # Reads and validates atc header information
-    for (var_name, type_str) in atc_file_structure.header_vars:
-        format_str = atc_file_structure.endianness + type_str
+    for (var_name, type_str) in afs.header_vars:
+        format_str = afs.endianness + type_str
         var_size = struct.calcsize(format_str)
         x = struct.unpack(format_str, data[byte_offset:byte_offset + var_size])[0]
         parsed_block[var_name] = x
@@ -68,18 +64,18 @@ class ATCReader:
 
     def num_leads(self):
         """Number of ECG leads in the recording."""
-        return sum(l in self.dict for l in _LEAD_IDS)
+        return sum(l in self.dict for l in afs.lead_ids)
 
     def get_ecg_samples(self, lead):
         """Get ECG samples for specified lead.
         Args:
             lead (int) The index of the lead. 1 = lead I, 2 = leadII
         """
-        block_id = _LEAD_IDS[lead - 1]
+        block_id = afs.lead_ids[lead - 1]
         return self.dict[block_id]['data']
 
     def get_average_beat(self, lead):
-        block_id = _AVG_IDS[lead - 1]
+        block_id = afs.avg_ids[lead - 1]
         return self.dict[block_id]['data']
 
     def mains_frequency_hz(self):
@@ -168,7 +164,7 @@ class ATCReader:
                 return None
             bytes_read += 4
 
-            if block_id in dict(atc_file_structure.block_types):
+            if block_id in dict(afs.block_types):
                 try:
                     x, N, chksum_ok = self.__parse_atc_block(data[bytes_read:], block_id)
                     parsed_data[block_id_str] = x
@@ -192,8 +188,8 @@ class ATCReader:
         computed_checksum = sum(bytearray(block_id))
         block_id_str = block_id.decode('ascii').strip()
         # Read in all data fields for this block
-        for (var_name, type_str) in dict(atc_file_structure.block_types)[block_id]:
-            format_str = atc_file_structure.endianness + type_str
+        for (var_name, type_str) in dict(afs.block_types)[block_id]:
+            format_str = afs.endianness + type_str
             parsed_block[var_name] = []
             if var_name == 'data':
                 if block_id_str in ('pre', 'ecg', 'ecg2', 'ecg3', 'ecg4', 'ecg5', 'ecg6', 'avg', 'avg2'):
