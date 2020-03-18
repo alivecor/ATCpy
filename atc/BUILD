@@ -32,6 +32,9 @@ py_test(
     deps = [
         ":atc_reader",
     ],
+    data = [
+        "//atc/test_data:atc_test_files",
+    ]
 )
 
 py_library(

@@ -3,27 +3,27 @@
 endianness = '<'
 
 # Header Block
-header_vars = (('FileSig', '5sBBB'), ('FileVer', 'I'))
+header_vars = (('signature', '5sBBB'), ('atc_version', 'I'))
 
 # Info Block
-info_vars = (('DataLen', 'I'), ('DateRec', '32s'), ('RecUUID', '40s'),
-             ('PhoneUDID', '44s'), ('PhoneModel', '32s'), ('RecSW', '32s'),
-             ('RecHW', '32s'), ('Loc', '52s'), ('Checksum', 'I'))
+info_vars = (('data_length', 'I'), ('date_recorded', '32s'), ('recording_uuid', '40s'),
+             ('phone_uuid', '44s'), ('phone_model', '32s'), ('recorded_software', '32s'),
+             ('recorded_hardware', '32s'), ('device_data', '52s'), ('checksum', 'I'))
 
 # Format Block
-fmt_vars = (('DataLen', 'I'), ('ECGFormat', 'B'), ('Fs', 'H'),
-            ('AmpRes_nV', 'H'), ('Flags', 'B'), ('Reserved', 'H'),
-            ('Checksum', 'I'))
+fmt_vars = (('data_length', 'I'), ('ecg_format', 'B'), ('sample_rate_hz', 'H'),
+            ('resolution', 'H'), ('flags', 'B'), ('reserved', 'H'),
+            ('checksum', 'I'))
 
 # ECG data block
-ecg_vars = (('DataLen', 'I'), ('Data', 'h'), ('Checksum', 'I'))
+ecg_vars = (('data_length', 'I'), ('data', 'h'), ('checksum', 'I'))
 
 # Average beat block (optional)
-avg_vars = (('DataLen', 'I'), ('Data', 'h'), ('Checksum', 'I'))
+avg_vars = (('data_length', 'I'), ('data', 'h'), ('checksum', 'I'))
 
 # Annotation block (optional)
-ann_vars = (('DataLen', 'I'), ('TickFreq', 'I'), ('Data', 'IH'),
-            ('Checksum', 'I'))
+ann_vars = (('data_length', 'I'), ('tick_frequency', 'I'), ('annotations', 'IH'),
+            ('checksum', 'I'))
 
 block_types = ((b'info', info_vars), (b'fmt ', fmt_vars), (b'pre ', ecg_vars),
                (b'ecg ', ecg_vars), (b'ecg2', ecg_vars), (b'ecg3', ecg_vars), (b'ecg4', ecg_vars), (b'ecg5', ecg_vars), (b'ecg6', ecg_vars),
