@@ -37,8 +37,8 @@ header_vars = (('signature', '5sBBB'), ('atc_version', 'I'))
 
 # Info Block
 info_vars = (('data_length', 'I'), ('date_recorded', '32s'), ('recording_uuid', '40s'),
-             ('phone_uuid', '44s'), ('phone_model', '32s'), ('recorded_software', '32s'),
-             ('recorded_hardware', '32s'), ('device_data', '52s'), ('checksum', 'I'))
+             ('phone_uuid', '44s'), ('phone_model', '32s'), ('recorder_software', '32s'),
+             ('recorder_hardware', '32s'), ('device_data', '52s'), ('checksum', 'I'))
 
 # Format Block
 fmt_vars = (('data_length', 'I'), ('ecg_format', 'B'), ('sample_rate_hz', 'H'),

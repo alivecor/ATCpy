@@ -31,6 +31,7 @@ py_test(
     srcs = ["atc_reader_test.py"],
     deps = [
         ":atc_reader",
+        ":atc_writer",
     ],
     data = [
         "//atc/test_data:atc_test_files",
@@ -46,6 +47,7 @@ py_test(
     name = "atc_writer_test",
     srcs = ["atc_writer_test.py"],
     deps = [
+        ":atc_reader",
         ":atc_writer",
     ],
     data = [

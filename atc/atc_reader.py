@@ -75,8 +75,19 @@ class ATCReader:
         return self.dict[block_id]['data']
 
     def get_average_beat(self, lead):
+        """Get the average beat for specified lead.
+        Args:
+            lead (int) The index of the lead. 1 = lead I, 2 = leadII
+        """
         block_id = afs.avg_ids[lead - 1]
         return self.dict[block_id]['data']
+
+    def get_annotations(self):
+        """Get beat annotations.  Returns pair of offsets, beat_types"""
+        annotations = self.dict['ann']['annotations']
+        offsets = [a[0] for a in annotations]
+        beat_types = [a[1] for a in annotations]
+        return offsets, beat_types
 
     def mains_frequency_hz(self):
         """The mains frequency where this file was recorded."""

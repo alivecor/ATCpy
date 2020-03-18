@@ -8,6 +8,25 @@ import atc_flags
 import atc_header
 
 
+def _encode_flags(d):
+    flags = 0
+    if d.get('polarity', 0):
+        flags = flags | atc_flags.POLARITY
+    if d.get('mains_frequency_hz', 0) == 60:
+        flags = flags | atc_flags.MAINS_FREQUENCY_60
+    if d.get('mains_filter', 0):
+        flags = flags | atc_flags.MAINS_FILTER
+    if d.get('low_pass_filter', 0):
+        flags = flags | atc_flags.LP_FILTER
+    if d.get('baseline_filter', 0):
+        flags = flags | atc_flags.BASELINE_FILTER
+    if d.get('notch_mains_filter', 0):
+        flags = flags | atc_flags.NOTCH_MAINS_FILTER
+    if d.get('enhanced_filter', 0):
+        flags = flags | atc_flags.ENHANCED_FILTER
+    return flags
+
+
 def _pad_binary_string(s, l):
     """Return a binary string of length l, containing at most l characters from s."""
     s = s[:l]
@@ -21,7 +40,8 @@ class ATCWriter:
     def __init__(self, path_or_file):
         if isinstance(path_or_file, str):
             self.__f = open(path_or_file, 'wb')
-        self.__f = path_or_file
+        else:
+            self.__f = path_or_file
         self.__sample_rate_hz = None  # Will be set by write_header
 
     def close(self):
@@ -48,7 +68,7 @@ class ATCWriter:
              recorder_hardware (str) The hardware used to record.  Max length 32.
              device_data (str) A string of comma separated key-value pairs specific to the recording device.
                                i.e. "SER=AC6L100010,BAT=55"  Max length 52.
-             flags (byte) The value of the ATC flags field.
+             flags (dict) A dictionary of boolean values of the ATC flags field.
              sample_rate_hz (int) The recording sample rate in hz.
              mains_frequency_hz (int) The mains frequency in hz.
 
@@ -81,8 +101,9 @@ class ATCWriter:
             fb.write(struct.pack('B', 1))  # format = 1
             fb.write(struct.pack(afs.endianness + 'I', sample_rate_hz))
             fb.write(struct.pack(afs.endianness + 'I', 500))  # resolution = 500
+            flags = _encode_flags(flags)
             if mains_frequency_hz == 60:
-                flags = flags | atc_flags.FLAG_MAINS_FREQUENCY_60
+                flags = flags | atc_flags.MAINS_FREQUENCY_60
             fb.write(struct.pack('B', flags))
             fb.write(struct.pack(afs.endianness + 'I', 0))  # reserved = 0
             fmt_checksum = sum(bytearray(fb.getbuffer()))
@@ -90,7 +111,7 @@ class ATCWriter:
             self.__f.write(fb.getbuffer())
         return not self.__f.closed
 
-    def write_samples(self, samples, lead):
+    def write_ecg_samples(self, samples, lead):
         """Writes raw samples to the ATC file.
 
            Args:
@@ -125,15 +146,15 @@ class ATCWriter:
             ab.write(afs.annotation_block_id.encode('ascii'))
             ab.write(struct.pack(afs.endianness + 'I', block_length_bytes))  # Annotation block length
             for o, t in zip(offsets, types):
-                ab.write(struct.pack(afs.endianness + 'I'), o)
-                ab.write(struct.pack(afs.endianness + 'h'), t)
+                ab.write(struct.pack(afs.endianness + 'I', o))
+                ab.write(struct.pack(afs.endianness + 'h', t))
             data_checksum = sum(bytearray(ab.getbuffer()))
-            ab.write(struct.pack(afs.endianness + 'I'), data_checksum)
+            ab.write(struct.pack(afs.endianness + 'I', data_checksum))
             return self.__f.write(ab.getbuffer())
 
     def __write_data_block(self, sample_data, block_id):
         """Writes data block, returns bytes written."""
-        if identifier is None:
+        if block_id is None:
             # Lead not supported in ATC format.
             return 0
         with io.BytesIO() as db:
@@ -141,7 +162,7 @@ class ATCWriter:
             data_length_bytes = len(sample_data) * 2
             db.write(struct.pack(afs.endianness + 'I', data_length_bytes))  # Data block length
             for x in sample_data:
-                db.write(struct.pack(afs.endianness + 'i'), x)
+                db.write(struct.pack(afs.endianness + 'i', x))
             data_checksum = sum(bytearray(db.getbuffer()))
-            db.write(struct.pack(afs.endianness + 'I'), data_checksum)
+            db.write(struct.pack(afs.endianness + 'I', data_checksum))
             return self.__f.write(db.getbuffer())
