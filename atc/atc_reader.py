@@ -1,5 +1,4 @@
 """ATCReader reads ECG files in ATC format."""
-import dateutil.parser
 import os
 import struct
 
@@ -84,45 +83,45 @@ class ATCReader:
 
     def get_annotations(self):
         """Get beat annotations.  Returns pair of offsets, beat_types"""
-        annotations = self.dict['ann']['annotations']
+        annotations = self.dict['ann ']['annotations']
         offsets = [a[0] for a in annotations]
         beat_types = [a[1] for a in annotations]
         return offsets, beat_types
 
     def mains_frequency_hz(self):
         """The mains frequency where this file was recorded."""
-        return self.dict['fmt']['flags']['mains_frequency_hz']
+        return self.dict['fmt ']['flags']['mains_frequency_hz']
 
     def sample_rate_hz(self):
         """The sample rate of the recording."""
-        return self.dict['fmt']['sample_rate_hz']
+        return self.dict['fmt ']['sample_rate_hz']
 
     def resolution(self):
         """The resolution of the signal, in nV.  Typically 500 for native ATC units."""
-        return self.dict['fmt']['resolution']
+        return self.dict['fmt ']['resolution']
 
     def flags(self):
         """The value of the ATC flags field."""
-        return self.dict['fmt']['flags']
+        return self.dict['fmt ']['flags']
 
     def mains_filtered(self):
         """Was this recording mains-filtered."""
-        return self.dict['fmt']['flags']['mains_filter']
+        return self.dict['fmt ']['flags']['mains_filter']
 
     def baseline_filtered(self):
         """Was this recording baseline filtered."""
-        return self.dict['fmt']['flags']['baseline_filter']
+        return self.dict['fmt ']['flags']['baseline_filter']
 
     def notch_mains_filtered(self):
         """Was this recording filtered with a notch mains filter."""
-        return self.dict['fmt']['flags']['notch_mains_filter']
+        return self.dict['fmt ']['flags']['notch_mains_filter']
 
     def enhanced_filtered(self):
         """Was this recording enhanced filtered (AliveCor enhanced filter)."""
-        return self.dict['fmt']['flags']['enhanced_filter']
+        return self.dict['fmt ']['flags']['enhanced_filter']
 
     def date_recorded(self):
-        """Returns a datetime.datetime reprsenting the date and time this recording was made"""
+        """Returns a string representing the date and time this recording was made"""
         return self.dict['info']['date_recorded']
 
     def recording_uuid(self):
@@ -169,7 +168,7 @@ class ATCReader:
         while bytes_read < num_of_bytes:
             try:
                 block_id = struct.unpack('4s', data[bytes_read:bytes_read + 4])[0]
-                block_id_str = block_id.decode('ascii').strip()
+                block_id_str = block_id.decode('ascii')
             except:
                 self.__status = MISSING_DATA
                 return None
@@ -189,7 +188,7 @@ class ATCReader:
             else:
                 print('Warning: Unknown ATC block ID %s at byte position %d, ignoring' % (block_id_str, bytes_read - 4))
         # Fails if no format block present.
-        if 'fmt' not in parsed_data:
+        if afs.format_block_id not in parsed_data:
             self.__status = MISSING_DATA
             return None
         return parsed_data
@@ -197,20 +196,20 @@ class ATCReader:
     def __parse_atc_block(self, data, block_id):
         byte_idx, parsed_block = 0, {}
         computed_checksum = sum(bytearray(block_id))
-        block_id_str = block_id.decode('ascii').strip()
+        block_id_str = block_id.decode('ascii')
         # Read in all data fields for this block
         for (var_name, type_str) in dict(afs.block_types)[block_id]:
             format_str = afs.endianness + type_str
             parsed_block[var_name] = []
             if var_name == 'data':
-                if block_id_str in ('pre', 'ecg', 'ecg2', 'ecg3', 'ecg4', 'ecg5', 'ecg6', 'avg', 'avg2'):
+                if block_id_str in (['pre '] + afs.lead_ids + afs.avg_ids):
                     N = int(parsed_block['data_length'] / 2)
                     parsed_block[var_name], byte_idx, computed_checksum = \
                             self.__parse_atc_data_block(data, format_str, N, byte_idx, computed_checksum)
                 else:
                     print('Warning: unknown atc data block ID: {0}'.format(block_id_str))
             elif var_name == 'annotations':
-                if block_id_str == 'ann':
+                if block_id_str == 'ann ':
                     N = int((parsed_block['data_length'] - 4) / 6)
                     parsed_block[var_name], byte_idx, computed_checksum = \
                             self.__parse_atc_annotation_block(data, format_str, N, byte_idx, computed_checksum)
@@ -231,11 +230,6 @@ class ATCReader:
                     parsed_block[var_name] = parsed_block[var_name].decode('ascii')
                     parsed_block[var_name] = parsed_block[var_name].rstrip('\0')
                     parsed_block[var_name] = str(parsed_block[var_name])
-
-                if var_name == 'date_recorded':
-                    # Parses date into a datetime.datetime
-                    dt = dateutil.parser.parse(parsed_block[var_name])
-                    parsed_block[var_name] = dt
 
                 if var_name == 'flags':
                     parsed_block[var_name] = _decode_flags(parsed_block[var_name])

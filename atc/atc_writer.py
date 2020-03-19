@@ -1,5 +1,5 @@
 """ATCReader writes ECG files in ATC format."""
-import datetime
+from datetime import datetime
 import io
 import struct
 
@@ -10,19 +10,19 @@ import atc_header
 
 def _encode_flags(d):
     flags = 0
-    if d.get('polarity', 0):
+    if d.get('polarity', False):
         flags = flags | atc_flags.POLARITY
-    if d.get('mains_frequency_hz', 0) == 60:
+    if d.get('mains_frequency_hz', False) == 60:
         flags = flags | atc_flags.MAINS_FREQUENCY_60
-    if d.get('mains_filter', 0):
+    if d.get('mains_filter', False):
         flags = flags | atc_flags.MAINS_FILTER
-    if d.get('low_pass_filter', 0):
+    if d.get('low_pass_filter', False):
         flags = flags | atc_flags.LP_FILTER
-    if d.get('baseline_filter', 0):
+    if d.get('baseline_filter', False):
         flags = flags | atc_flags.BASELINE_FILTER
-    if d.get('notch_mains_filter', 0):
+    if d.get('notch_mains_filter', False):
         flags = flags | atc_flags.NOTCH_MAINS_FILTER
-    if d.get('enhanced_filter', 0):
+    if d.get('enhanced_filter', False):
         flags = flags | atc_flags.ENHANCED_FILTER
     return flags
 
@@ -59,7 +59,7 @@ class ATCWriter:
         """Write ATC header and format block.  Should be called before writing data segments.
 
            Args:
-             date_recorded (datetime) The date and time recorded.
+             date_recorded (datetime/str) The date and time recorded.
              recording_uuid (str) The UUID of this recording.  Max length 40.
              phone_uuid (str) The UUID of the mobile phone (unused).  Max length 44.
              phone_model (str) The model name and number of the mobile device used to make the recording.
@@ -83,8 +83,10 @@ class ATCWriter:
             ib.write(afs.info_block_id.encode('ascii'))
             ib.write(struct.pack(afs.endianness + 'I', afs.info_block_size - afs.block_container_size))  # Info block length
             if date_recorded is None:
-                date_recorded = datetime.datetime.now()
-            ib.write(_pad_binary_string(date_recorded.isoformat(), 32))
+                date_recorded = datetime.now()
+            if isinstance(date_recorded, datetime):
+                date_recorded = date_recorded.isoformat('T', 'milliseconds')
+            ib.write(_pad_binary_string(date_recorded, 32))
             ib.write(_pad_binary_string(recording_uuid, 40))
             ib.write(_pad_binary_string(phone_uuid, 44))
             ib.write(_pad_binary_string(phone_model, 32))
@@ -99,13 +101,13 @@ class ATCWriter:
             fb.write(afs.format_block_id.encode('ascii'))
             fb.write(struct.pack(afs.endianness + 'I', afs.format_block_size - afs.block_container_size))  # Format block length
             fb.write(struct.pack('B', 1))  # format = 1
-            fb.write(struct.pack(afs.endianness + 'I', sample_rate_hz))
-            fb.write(struct.pack(afs.endianness + 'I', 500))  # resolution = 500
+            fb.write(struct.pack(afs.endianness + 'H', sample_rate_hz))
+            fb.write(struct.pack(afs.endianness + 'H', 500))  # resolution = 500
             flags = _encode_flags(flags)
             if mains_frequency_hz == 60:
                 flags = flags | atc_flags.MAINS_FREQUENCY_60
             fb.write(struct.pack('B', flags))
-            fb.write(struct.pack(afs.endianness + 'I', 0))  # reserved = 0
+            fb.write(struct.pack(afs.endianness + 'H', 0))  # reserved = 0
             fmt_checksum = sum(bytearray(fb.getbuffer()))
             fb.write(struct.pack(afs.endianness + 'I', fmt_checksum))
             self.__f.write(fb.getbuffer())
@@ -145,6 +147,7 @@ class ATCWriter:
         with io.BytesIO() as ab:
             ab.write(afs.annotation_block_id.encode('ascii'))
             ab.write(struct.pack(afs.endianness + 'I', block_length_bytes))  # Annotation block length
+            ab.write(struct.pack(afs.endianness + 'I', self.__sample_rate_hz))  # Annotation tick frequency
             for o, t in zip(offsets, types):
                 ab.write(struct.pack(afs.endianness + 'I', o))
                 ab.write(struct.pack(afs.endianness + 'h', t))
@@ -162,7 +165,7 @@ class ATCWriter:
             data_length_bytes = len(sample_data) * 2
             db.write(struct.pack(afs.endianness + 'I', data_length_bytes))  # Data block length
             for x in sample_data:
-                db.write(struct.pack(afs.endianness + 'i', x))
+                db.write(struct.pack(afs.endianness + 'h', x))
             data_checksum = sum(bytearray(db.getbuffer()))
             db.write(struct.pack(afs.endianness + 'I', data_checksum))
             return self.__f.write(db.getbuffer())
