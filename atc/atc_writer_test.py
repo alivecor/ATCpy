@@ -4,11 +4,11 @@ import os
 import tempfile
 import unittest
 
-import atc_annotation
-import atc_header
-import atc_reader
-from atc_reader import ATCReader
-from atc_writer import ATCWriter
+from atc import atc_annotation
+from atc import atc_header
+from atc import atc_reader
+from atc.atc_reader import ATCReader
+from atc.atc_writer import ATCWriter
 
 
 class TestATCWriter(unittest.TestCase):

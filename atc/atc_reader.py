@@ -2,7 +2,7 @@
 import os
 import struct
 
-import atc_file_structure as afs
+from atc import atc_file_structure as afs
 
 
 # Reader status codes

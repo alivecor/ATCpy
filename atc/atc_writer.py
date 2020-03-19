@@ -3,9 +3,9 @@ from datetime import datetime
 import io
 import struct
 
-import atc_file_structure as afs
-import atc_flags
-import atc_header
+from atc import atc_file_structure as afs
+from atc import atc_flags
+from atc import atc_header
 
 
 def _encode_flags(d):
