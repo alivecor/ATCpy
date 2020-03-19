@@ -15,4 +15,4 @@ before_install:
   - cp .bazelrc_travis .bazelrc
 
 script:
-  - bazel test //atc/... -c opt --test_output=errors --curses=no
+  - bazel test //atc/... -c opt --python_version=py3 --test_output=errors --curses=no
