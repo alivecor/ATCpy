@@ -25,9 +25,9 @@ Reads and parses an ATC file.
     import atc_reader
     from atc_reader import ATCReader
 
-    reader = ATCReader('path_to_file.atc');
+    reader = ATCReader('path_to_file.atc')
     if reader.status() == atc_reader.READ_SUCCESS:
-        leadI = atc_reader.GetECGSamples(ATCReader.LeadI);
+        leadI = atc_reader.get_ecg_samples(1)
         # ...
     else:
         # handle error.
@@ -38,6 +38,10 @@ Reads and parses an ATC file.
 Writes ECG data to an ATC file.
 
 ```
-    import atc_writer
     from atc_writer import ATCWriter
+
+    with writer as ATCWriter('path_to_file.atc'):
+        writer.write_header(...)
+        writer.writer_ecg_samples(...)
+        ...
 ```
