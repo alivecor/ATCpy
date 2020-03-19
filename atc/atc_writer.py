@@ -85,7 +85,10 @@ class ATCWriter:
             if date_recorded is None:
                 date_recorded = datetime.now()
             if isinstance(date_recorded, datetime):
-                date_recorded = date_recorded.isoformat(timespec='milliseconds')
+                try:
+                    date_recorded = date_recorded.isoformat(timespec='milliseconds')
+                except:
+                    date_recorded = date_recorded.isoformat()  # Pre python2.7 version without timespec
             ib.write(_pad_binary_string(date_recorded, 32))
             ib.write(_pad_binary_string(recording_uuid, 40))
             ib.write(_pad_binary_string(phone_uuid, 44))
