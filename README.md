@@ -40,8 +40,8 @@ Writes ECG data to an ATC file.
 ```
     from atc_writer import ATCWriter
 
-    with writer as ATCWriter('path_to_file.atc'):
+    with ATCWriter('path_to_file.atc') as writer:
         writer.write_header(...)
-        writer.writer_ecg_samples(...)
+        writer.write_ecg_samples(...)
         ...
 ```
