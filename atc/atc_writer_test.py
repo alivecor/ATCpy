@@ -81,6 +81,38 @@ class TestATCWriter(unittest.TestCase):
         self.assertFilesBinaryEqual(temp_file.name, 'atc/test_data/6_lead.atc')
         os.unlink(temp_file.name)
 
+    def test_saves_twelve_lead(self):
+        atc_file = ATCReader('atc/test_data/12_lead.atc')
+        self.assertEqual(atc_file.status(), atc_reader.READ_SUCCESS)
+        self.assertEqual(atc_file.num_leads(), 12)
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_file.close()
+        with ATCWriter(temp_file.name) as writer:
+            self.assertTrue(
+                writer.write_header(
+                    atc_file.date_recorded(), atc_file.recording_uuid(), atc_file.phone_uuid(), atc_file.phone_model(),
+                    atc_file.recorder_software(), atc_file.recorder_hardware(), atc_file.device_data(),
+                    atc_file.flags(), atc_file.sample_rate_hz(), atc_file.mains_frequency_hz())
+            )
+            writer.write_ecg_samples(atc_file.get_ecg_samples(1), 1)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(2), 2)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(3), 3)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(4), 4)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(5), 5)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(6), 6)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(7), 7)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(8), 8)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(9), 9)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(10), 10)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(11), 11)
+            writer.write_ecg_samples(atc_file.get_ecg_samples(12), 12)
+            offsets, beat_types = atc_file.get_annotations()
+            writer.write_annotations(offsets, beat_types)
+        saved_atc_file = ATCReader(temp_file.name)
+        self.assertEqual(saved_atc_file.status(), atc_reader.READ_SUCCESS)
+        self.assertFilesBinaryEqual(temp_file.name, 'atc/test_data/12_lead.atc')
+        os.unlink(temp_file.name)
+
     def test_saves_annotations(self):
         temp_file = tempfile.NamedTemporaryFile(delete=False)
         temp_file.close()

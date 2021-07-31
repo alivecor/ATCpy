@@ -99,6 +99,12 @@ class TestATCReader(unittest.TestCase):
         self.assertEqual(atc_file_ef.num_leads(), 6)
         self.assertFalse(atc_file_ef.mains_filtered(), 6)
 
+    def test_loads_6_lead_file(self):
+        atc_file = ATCReader('atc/test_data/12_lead.atc')
+        self.assertEqual(atc_file.status(), atc_reader.READ_SUCCESS)
+        self.assertEqual(atc_file.num_leads(), 12)
+        self.assertFalse(atc_file.mains_filtered())
+
     def test_loads_average_beats(self):
         atc_file = ATCReader('atc/test_data/6_lead_ab.atc')
         self.assertEqual(atc_file.status(), atc_reader.READ_SUCCESS)

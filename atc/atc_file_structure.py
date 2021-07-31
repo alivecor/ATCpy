@@ -13,14 +13,21 @@ ecg3_data_block_id = 'ecg3'  # Lead III
 ecg4_data_block_id = 'ecg4'  # Lead aVR
 ecg5_data_block_id = 'ecg5'  # Lead aVL
 ecg6_data_block_id = 'ecg6'  # Lead aVF
+ecg7_data_block_id = 'ecg7'  # Lead V1
+ecg8_data_block_id = 'ecg8'  # Lead V2
+ecg9_data_block_id = 'ecg9'  # Lead V3
+ecga_data_block_id = 'ecga'  # Lead V4
+ecgb_data_block_id = 'ecgb'  # Lead V5
+ecgc_data_block_id = 'ecgc'  # Lead V6
+
 avg_beat_data_block_id = 'avg '  # Lead I Average Beat
 avg_beat2_data_block_id = 'avg2'  # Lead II Average Beat
 
 atc_block_id_len = 4
 
-lead_ids = ['ecg ', 'ecg2', 'ecg3', 'ecg4', 'ecg5', 'ecg6']
-avg_ids = ['avg ', 'avg2']
-
+lead_ids = ['ecg ', 'ecg2', 'ecg3', 'ecg4', 'ecg5', 'ecg6', 'ecg7', 'ecg8', 'ecg9', 'ecga', 'ecgb', 'ecgc']
+avg_ids = ['avg ', 'avg2', 'avg3', 'avg4', 'avg5', 'avg6', 'avg7', 'avg8', 'avg9', 'avga', 'avgb', 'avgc']
+med_ids = ['med ', 'med2', 'med3', 'med4', 'med5', 'med6', 'med7', 'med8', 'med9', 'meda', 'medb', 'medc']
 
 # Note: Every block starts with atc_block_id_len bytes, followed by uint32_t length, and ends with uint32_t checksum.
 block_container_size = atc_block_id_len + (2 * 4)
@@ -55,6 +62,7 @@ avg_vars = (('data_length', 'I'), ('data', 'h'), ('checksum', 'I'))
 ann_vars = (('data_length', 'I'), ('tick_frequency', 'I'), ('annotations', 'IH'),
             ('checksum', 'I'))
 
-block_types = ((b'info', info_vars), (b'fmt ', fmt_vars), (b'pre ', ecg_vars),
-               (b'ecg ', ecg_vars), (b'ecg2', ecg_vars), (b'ecg3', ecg_vars), (b'ecg4', ecg_vars), (b'ecg5', ecg_vars), (b'ecg6', ecg_vars),
-               (b'avg ', avg_vars), (b'avg2', avg_vars), (b'ann ', ann_vars))
+block_types = (
+        [(b'info', info_vars), (b'fmt ', fmt_vars), (b'pre ', ecg_vars), (b'ann ', ann_vars)] +
+        [(b.encode('ascii'), ecg_vars) for b in lead_ids + avg_ids + med_ids]
+)
